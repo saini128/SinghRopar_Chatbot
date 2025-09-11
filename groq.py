@@ -1,32 +1,65 @@
-import os
+from datetime import datetime
 import requests
-from models.chat_models import GroqResponse
-
-GROQ_API = os.getenv("GROQ_API")
-GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-
-SYSTEM_PROMPT = (
-    "You are a helpful assistant. "
-    "Keep answers concise and to the point and below 400 tokens."
-)
+from models.chat_models import ChatLog, GroqResponse
+import config
+from db.init import SessionLocal
+from db.funcs import incrementStats, saveChatLog
+from models.config_models import ApiKeys
 
 
 def getGroqResponse(prompt: str) -> GroqResponse:
+    # Pick the current key based on least tokens used
+    current_key = config.GROQ_API[config.KEY_INDEX]
+
     headers = {
-        "Authorization": f"Bearer {GROQ_API}",
+        "Authorization": f"Bearer {current_key.key}",
         "Content-Type": "application/json"
     }
     data = {
-        "model": GROQ_MODEL,
-        "temperature": 0.7,
-        "max_tokens": 500,
+        "model": config.GROQ_MODEL,
+        "temperature": config.TEMPERATURE,
+        "max_tokens": config.MAX_TOKENS,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": config.SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ]
     }
 
-    response = requests.post(GROQ_URL, headers=headers, json=data)
+    t1 = datetime.now()
+    response = requests.post(config.GROQ_URL, headers=headers, json=data)
+    t2 = datetime.now()
     raw = response.json()
-    return GroqResponse.from_api(raw)
+
+    resp = GroqResponse.from_api(raw)
+    resp.total_time = (t2 - t1).total_seconds() * 1000  # in ms
+    t3 = datetime.now()
+    try:
+        db = SessionLocal()
+        log = ChatLog(
+            user_message=prompt,
+            bot_response=resp.error if resp.content == "" else resp.content,
+            api_hit=True,
+            timestamp=datetime.now().isoformat(),
+            prompt_tokens=resp.prompt_tokens,
+            completion_tokens=resp.completion_tokens,
+            total_time=resp.total_time,
+            success=resp.success
+        )
+        saveChatLog(db, log)
+        incrementStats(
+            db,
+            current_key.key,
+            resp.success,
+            resp.completion_tokens + resp.prompt_tokens
+        )
+        # Refresh API keys from DB so we have updated tokens_used
+        config.GROQ_API = db.query(ApiKeys).all()
+        config.KEY_INDEX = min(
+            range(len(config.GROQ_API)),
+            key=lambda i: config.GROQ_API[i].tokens_used
+        )
+    finally:
+        db.close()
+    t4 = datetime.now()
+    print(f"Total time for DB ops: {(t4 - t3).total_seconds()*1000} ms")
+    return resp

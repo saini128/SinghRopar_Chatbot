@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-
+from sqlalchemy import ARRAY, Boolean, Column, Integer, String
+from db.init import Base
 
 
 class ChatRequest(BaseModel):
@@ -50,3 +51,17 @@ class GroqResponse(BaseModel):
                 success=False,
                 error=str(e)
             )
+
+class ChatLog(Base):
+    __tablename__ = "chat_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_message = Column(String, nullable=False)
+    bot_response = Column(String, nullable=False)
+    api_hit=Column(Boolean, nullable=False)
+    timestamp = Column(String, nullable=False)  # ISO format timestamp
+    prompt_tokens = Column(Integer, nullable=False)
+    completion_tokens = Column(Integer, nullable=False)
+    total_time = Column(Integer, nullable=False)
+    success=Column(Boolean, nullable=False)
+
