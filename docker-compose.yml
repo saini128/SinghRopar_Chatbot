@@ -1,0 +1,10 @@
+services:
+  singhropar-chatbot:
+    build: .
+    container_name: singhropar-chatbot
+    restart: always
+    ports:
+      - "8059:8000"
+    volumes:
+      - ./chatbot.db:/app/chatbot.db
+      - ./chatlog.ann:/app/chatlog.ann
