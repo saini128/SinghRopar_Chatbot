@@ -253,11 +253,9 @@
             const currentMaxTokens = parseInt(document.getElementById('max-tokens-slider').value);
 
             // Compare current values with initial values
-            if (currentTemp !== {{ config.temperature }} || currentMaxTokens !== {{ config.max_tokens }}) {
-                // If a value has changed, enable the button
+            if ( currentTemp !== {{ config.temperature }} || currentMaxTokens !== {{ config.max_tokens }} ) {
                 updateButton.disabled = false;
             } else {
-                // If values are the same, disable the button
                 updateButton.disabled = true;
             }
         }
