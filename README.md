@@ -25,6 +25,7 @@ Currently tested on an **AWS t3a.medium (2 vCPU, 4 GB RAM)** instance.
   - The API maintains **full context in memory** rather than generating embeddings for large reference documents.  
   - To reduce excessive token usage, each **prompt-response pair** is stored in a **lightweight vector database (Annoy by Spotify)**.  
   - For embeddings, **all-MiniLM-L6-v2** is used — a compact and efficient model that allows quick similarity checks.  
-  - If a question was already asked, the chatbot retrieves the **previous response** directly, saving **Groq API calls** and improving speed.  
+  - If a question was already asked, the chatbot retrieves the **previous response** directly, saving **Groq API calls** and improving speed.
+  -  Threshold value for **similarity checks** is also dynamic but set to a reasonable default to avoid excessive API calls while preventing false positives.
 
 This balance ensures that even on smaller servers, the chatbot runs smoothly while minimizing costs and resource usage.  
