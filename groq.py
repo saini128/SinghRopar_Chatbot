@@ -9,6 +9,8 @@ from models.config_models import ApiKeys
 
 def getGroqResponse(prompt: str) -> GroqResponse:
     # Pick the current key based on least tokens used
+
+    
     current_key = config.GROQ_API[config.KEY_INDEX]
 
     headers = {
