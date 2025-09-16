@@ -34,3 +34,9 @@ class Context(Base):
     content = Column(String, nullable=False)
     timestamp = Column(String, nullable=False)  # ISO format timestamp
     tokens = Column(Integer, nullable=False)
+
+class AnnoyIndexDB(Base):
+    __tablename__ = "annoy_index"
+
+    id = Column(Integer, primary_key=True, index=True)
+    sentence = Column(String, nullable=False)  # Corresponding sentence

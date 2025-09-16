@@ -9,13 +9,16 @@ import config
 import os
 
 from models.config_models import ApiKeys
+from semantic import init
 
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     load_dotenv()
     load_config()
+    init()
     yield
     # Cleanup code can go here
     pass

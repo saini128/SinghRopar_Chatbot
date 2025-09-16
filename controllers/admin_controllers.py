@@ -54,7 +54,7 @@ async def context(request: Request):
     """Render the context page"""
     try:
         db = SessionLocal()
-        context = db.query(Context).order_by(Context.timestamp.desc()).limit(50).all()
+        context = db.query(Context).order_by(Context.timestamp.desc()).limit(4).all()
     finally:
         db.close()
 

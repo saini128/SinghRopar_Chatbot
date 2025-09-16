@@ -3,6 +3,8 @@ import os
 
 # These configurations are fixed for simplicity.
 DATABASE_URL = "sqlite:///./chatbot.db"  # local SQLite file
+ANNOY_DB = "chat_cache.ann"  # local Annoy index file
+
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 KEY_INDEX = 0
 
@@ -16,3 +18,7 @@ SYSTEM_PROMPT = (
     "Keep answers concise and to the point and below 400 tokens."
 )
 
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+SEMANTIC_THRESHOLD=0.85
+ANNOY_TREES=10
+ANNOY_BUFFER=1  # Number of new embeddings to buffer before rebuilding Annoy index

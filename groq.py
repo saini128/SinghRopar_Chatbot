@@ -5,14 +5,50 @@ import config
 from db.init import SessionLocal
 from db.funcs import incrementStats, saveChatLog
 from models.config_models import ApiKeys
+import semantic
 
 
 def getGroqResponse(prompt: str) -> GroqResponse:
-    # Pick the current key based on least tokens used
+    #check sematic search
+    t_sem1=datetime.now()
+    prompt_embedding=semantic.create_embedding(prompt)
+    similar_answer=semantic.find_similar_answer(prompt_embedding)
+    t_sem2=datetime.now()
+    if similar_answer is not None:
+        print("Found similar answer in DB cache.")
+        resp = GroqResponse(
+            completion_tokens=similar_answer.completion_tokens,
+            content=similar_answer.bot_response,
+            prompt_tokens=int(len(prompt) / 4),
+            total_time=(t_sem2 - t_sem1).total_seconds() * 1000
+        )
 
-    
+        try:
+            db = SessionLocal()
+            log = ChatLog(
+                user_message=prompt,
+                bot_response=resp.content,
+                api_hit=False,
+                timestamp=datetime.now().isoformat(),
+                prompt_tokens=resp.prompt_tokens,
+                completion_tokens=resp.completion_tokens,
+                total_time=resp.total_time,
+                success=resp.success
+            )
+            saveChatLog(db, log)
+            incrementStats(
+                db,
+                "",
+                False,
+                resp.completion_tokens + resp.prompt_tokens,
+                cache_hit=True
+            )
+        finally:
+            db.close()
+        return resp
+    print("No similar answer found in DB cache. Querying Groq API...")
+
     current_key = config.GROQ_API[config.KEY_INDEX]
-
     headers = {
         "Authorization": f"Bearer {current_key.key}",
         "Content-Type": "application/json"
@@ -61,6 +97,8 @@ def getGroqResponse(prompt: str) -> GroqResponse:
             key=lambda i: config.GROQ_API[i].tokens_used
         )
     finally:
+        if resp.success:
+            semantic.rebuild_cache(prompt_embedding, prompt)
         db.close()
     t4 = datetime.now()
     print(f"Total time for DB ops: {(t4 - t3).total_seconds()*1000} ms")

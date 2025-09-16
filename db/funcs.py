@@ -78,7 +78,7 @@ def getStats(db: Session):
     return db.query(Stats).first()
 
 
-def incrementStats(db: Session, apistring: str, hit: bool, tokens: int):
+def incrementStats(db: Session, apistring: str, hit: bool, tokens: int, cache_hit: bool = False):
     """Update global stats counters and API key usage"""
     # Fetch or create Stats row
     stats = db.query(Stats).first()
@@ -93,6 +93,13 @@ def incrementStats(db: Session, apistring: str, hit: bool, tokens: int):
         db.add(stats)
         db.commit()
         db.refresh(stats)
+
+    if cache_hit:
+        stats.total_requests += 1
+        stats.total_tokens_processed += tokens
+        db.commit()
+        db.refresh(stats)
+        return
 
     # Fetch API key row
     apikey = db.query(ApiKeys).filter(ApiKeys.key == apistring).first()
@@ -117,8 +124,6 @@ def incrementStats(db: Session, apistring: str, hit: bool, tokens: int):
     db.commit()
     db.refresh(stats)
     db.refresh(apikey)
-
-    return stats, apikey
 
 
 # 🔹 Chat Log Functions
